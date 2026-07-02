@@ -1,0 +1,23 @@
+{
+  "name": "super-brainstorming",
+  "version": "0.1.0",
+  "description": "AI-powered brainstorming with two divergence modes — research-first evidence mining (reviews/communities/competitor gaps/trends) and creative thinking lenses — plus deterministic scoring gates and research handoff",
+  "author": {
+    "name": "Wandererer",
+    "url": "https://github.com/Wandererer"
+  },
+  "homepage": "https://github.com/Wandererer/super-brainstorming",
+  "repository": "https://github.com/Wandererer/super-brainstorming",
+  "license": "MIT",
+  "keywords": [
+    "super-brainstorming",
+    "brainstorming",
+    "multi-agent",
+    "ideation",
+    "research-first",
+    "evidence-mining",
+    "divergent-thinking",
+    "socratic",
+    "concept-brief"
+  ]
+}

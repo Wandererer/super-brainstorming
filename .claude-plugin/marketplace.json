@@ -1,0 +1,24 @@
+{
+  "name": "super-brainstorming",
+  "description": "super-brainstorming — research-first evidence mining and creative-lens brainstorming with deterministic convergence gates",
+  "owner": {
+    "name": "Wandererer",
+    "url": "https://github.com/Wandererer"
+  },
+  "plugins": [
+    {
+      "name": "super-brainstorming",
+      "description": "AI-powered brainstorming with two divergence modes — research-first evidence mining (reviews/communities/competitor gaps/trends) and creative thinking lenses — plus deterministic scoring gates and research handoff",
+      "source": "./",
+      "category": "productivity",
+      "tags": [
+        "brainstorming",
+        "multi-agent",
+        "ideation",
+        "research-first",
+        "evidence-mining",
+        "concept-brief"
+      ]
+    }
+  ]
+}

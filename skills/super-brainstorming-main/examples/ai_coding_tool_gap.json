@@ -1,0 +1,64 @@
+{
+  "frame": {
+    "topic": "AI 코딩 도구 시장의 미충족 니즈에서 제품 아이디어 발굴",
+    "hmw": "어떻게 하면 AI 코딩 도구에 지친 1인 개발자가 컨텍스트 손실·리뷰 피로·비용 불안 없이 AI의 생산성을 온전히 가져가게 할 수 있을까?",
+    "goal_type": "new_product",
+    "context": "AI 코딩 도구는 레드오션이지만 사용자 불만(컨텍스트 손실, 생성 코드 리뷰 피로, 예측 불가한 비용)은 여전히 해결되지 않았다.",
+    "assets": [
+      "Claude Code 플러그인 개발 경험",
+      "한국어 개발자 커뮤니티 접점",
+      "멀티에이전트 오케스트레이션 노하우"
+    ],
+    "constraints": [
+      "1인 개발 리소스",
+      "6개월 내 MVP",
+      "구독 모델 선호"
+    ],
+    "success_criteria": [
+      "쇼트리스트 5개 중 2개 이상이 기존 도구와 명확히 차별화",
+      "선택 컨셉의 riskiest assumption이 2주 내 검증 가능"
+    ],
+    "anti_goals": [
+      "범용 코드 자동완성 클론",
+      "대규모 팀 대상 엔터프라이즈 제품"
+    ]
+  },
+  "divergence": {
+    "mode": "research_first",
+    "miners": [
+      "review_miner",
+      "community_miner",
+      "competitor_gap_miner",
+      "trend_miner",
+      "market_data_miner"
+    ],
+    "evidence_per_miner": 8,
+    "lenses": [
+      "pain_to_product",
+      "gap_wedge",
+      "trend_collision"
+    ],
+    "ideas_per_lens": 8,
+    "wildness_appetite": "balanced",
+    "wildcard": true
+  },
+  "convergence": {
+    "shortlist_size": 5,
+    "min_judges": 3,
+    "min_evidence": 20,
+    "min_miners": 4,
+    "min_evidence_refs": 1,
+    "scoring_weights": {
+      "impact": 0.25,
+      "feasibility": 0.3,
+      "novelty": 0.2,
+      "fit": 0.15,
+      "timing": 0.1
+    }
+  },
+  "output": {
+    "brief_count": 2,
+    "handoff": "insane-research",
+    "language": "ko"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "frame": {
+    "topic": "노트 앱 시장의 빈틈 — 기존 제품들이 공통적으로 놓치는 것",
+    "hmw": "어떻게 하면 노트를 쌓기만 하고 다시 보지 않는 사람이 쌓인 노트에서 실제 가치를 회수하게 할 수 있을까?",
+    "goal_type": "new_product",
+    "context": "노트 앱은 캡처(수집) 경쟁만 치열하고, 회수(retrieval-to-action)는 모든 제품이 사용자 몫으로 떠넘긴다. write-only 무덤이 기본 상태다.",
+    "assets": [
+      "Next.js/TypeScript 풀스택 역량",
+      "LLM API 활용 경험"
+    ],
+    "constraints": [
+      "1인 개발",
+      "사이드 프로젝트 (주 15시간)",
+      "월 고정비 $100 이하"
+    ],
+    "success_criteria": [
+      "\"또 하나의 에디터\"가 아닌 회수 중심 컨셉이 쇼트리스트의 과반",
+      "선택 컨셉이 기존 노트 앱 위에 얹는 형태로도 검증 가능"
+    ],
+    "anti_goals": [
+      "또 하나의 범용 마크다운 에디터",
+      "Notion/Obsidian과 기능 수로 경쟁하는 제품"
+    ]
+  },
+  "divergence": {
+    "lens_count": 6,
+    "lenses": [
+      "user_pain_archaeologist",
+      "contrarian",
+      "constraint_flip",
+      "anti_persona",
+      "adjacent_possible",
+      "ten_x"
+    ],
+    "ideas_per_lens": 6,
+    "wildness_appetite": "wild",
+    "wildcard": true
+  },
+  "convergence": {
+    "shortlist_size": 5,
+    "min_judges": 2,
+    "scoring_weights": {
+      "impact": 0.25,
+      "feasibility": 0.25,
+      "novelty": 0.3,
+      "fit": 0.1,
+      "timing": 0.1
+    }
+  },
+  "output": {
+    "brief_count": 1,
+    "handoff": "insane-research",
+    "language": "ko"
+  }
+}
