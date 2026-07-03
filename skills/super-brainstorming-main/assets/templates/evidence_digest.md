@@ -12,8 +12,16 @@
 | competitor_gap_miner | {COMPETITOR_SOURCES} | {GAP_COUNT} | {GAP_TOP_SIGNAL} |
 | trend_miner | {TREND_SOURCES} | {TREND_COUNT} | {TREND_TOP_SIGNAL} |
 | market_data_miner | {MARKET_SOURCES} | {MARKET_COUNT} | {MARKET_TOP_SIGNAL} |
+| solution_saturation_miner | {SATURATION_SOURCES — 앱스토어 차트/Product Hunt/GitHub} | {SATURATION_COUNT} | {SATURATION_TOP_SIGNAL — 가장 포화된 니치} |
+| prior-art (Phase 4.5) | {PRIOR_ART_SEARCHES — 클러스터별 검색어} | {PRIOR_ART_COUNT} | {MOST_SATURATED_CLUSTER} |
 
 > 커버하지 못한 소스 클래스가 있으면 여기 명시한다 — 침묵하는 절단은 "다 봤다"로 읽힌다: {UNCOVERED_NOTE}
+
+## Saturation Map (니치별 포화도 — 공급측)
+
+| 클러스터 | Saturation | 무료/OSS 존재 | 결정적 경쟁 제품 |
+|----------|-----------|---------------|------------------|
+| {CLUSTER_1} | {SAT_SCORE_1}/5 | {HAS_FREE_1} | {KEY_COMPETITOR_1 ({COMP_EV_1})} |
 
 ## Top Signals (강도순)
 

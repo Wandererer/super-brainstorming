@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "super-brainstorming",
-      "description": "AI-powered brainstorming with two divergence modes — research-first evidence mining (reviews/communities/competitor gaps/trends) and creative thinking lenses — plus deterministic scoring gates and research handoff",
+      "description": "AI-powered brainstorming with two divergence modes — research-first evidence mining (reviews/communities/competitor gaps/trends/existing solutions) and creative thinking lenses — plus prior-art saturation gates, deterministic scoring, and research handoff",
       "source": "./",
       "category": "productivity",
       "tags": [

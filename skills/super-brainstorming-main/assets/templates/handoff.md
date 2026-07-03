@@ -1,13 +1,13 @@
 # Handoff: {TOPIC}
 
-> 발산 → 검증. 선택된 각 컨셉의 가장 위험한 가정을 출처 기반으로 검증하는
-> ready-to-run 쿼리. (super-brainstorming의 터미널 상태는 구현이 아니라 이 핸드오프다)
+> 발산 → 검증. 선택된 각 컨셉마다 **쿼리 2종 필수**: ① 가장 위험한 가정 ② 경쟁 지형.
+> (super-brainstorming의 터미널 상태는 구현이 아니라 이 핸드오프다)
 
 ## Concept 1: {SELECTED_TITLE_1} ({SELECTED_IDEA_ID_1})
 
 **검증 대상 가정**: {RISKIEST_ASSUMPTION_1}
 
-### Natural language command
+### Query ① — Riskiest assumption
 
 ```
 /insane-research {VALIDATION_QUESTION_1 — 시장성·경쟁·실현 근거를 묻는 구체적 질문, 연도 포함}
@@ -40,11 +40,20 @@
 }
 ```
 
+### Query ② — 경쟁 지형 (필수)
+
+> Phase 4.5 선행기술 대조는 클러스터 단위 스냅샷이었다. 선택된 컨셉은 제품 단위로 정밀 재검증한다.
+> 알려진 경쟁: {KNOWN_COMPETITORS_FROM_SATURATION — ev_id와 제품명}
+
+```
+/insane-research {CONCEPT_TITLE_1}의 경쟁 지형 {YEAR}: 누가 이미 이 문제를 풀고 있나 — 기존 제품 전수 목록, 각각의 가격/무료 여부, traction(사용자 수·평점·성장), 그리고 그들이 {WEDGE_1}를 못 하는 이유가 실제로 유효한지
+```
+
 ---
 
 ## Concept 2: {SELECTED_TITLE_2} ({SELECTED_IDEA_ID_2})
 
-{SAME_STRUCTURE_AS_CONCEPT_1}
+{SAME_STRUCTURE_AS_CONCEPT_1 — Query ① + Query ② 모두}
 
 ---
 

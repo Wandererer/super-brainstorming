@@ -19,7 +19,7 @@ Restart Claude Code after installing — `/super-brainstorming` becomes availabl
 
 ### 🔍 Research-first — `research_first`
 
-"Dig everywhere, keep only evidence-backed ideas." Five miner agents each dig a different source class in parallel.
+"Dig everywhere, keep only evidence-backed ideas." Six miner agents each dig a different source class in parallel — five mine **demand** (pains, gaps), one mines **supply** (what already exists).
 
 | Miner | Where it digs | What it extracts |
 |-------|---------------|------------------|
@@ -28,6 +28,7 @@ Restart Claude Code after installing — `/super-brainstorming` becomes availabl
 | Competitor gaps | 5-8 incumbent products | What none of them do — and why |
 | Trends | Changes in the last 1-2 years | Why it became possible now (timing fuel) |
 | Market data | Reports, quantitative signals | Growing categories, pricing benchmarks |
+| **Existing solutions** | App store charts, Product Hunt, GitHub | Products already serving each niche — pricing, free/OSS, traction (me-too's natural enemy) |
 
 Every finding lands in `evidence_ledger.jsonl` with its source URL — **no URL, no card** — and three synthesis lenses (pain→product, gap→wedge, trend×pain) grow ideas only from that evidence. Ideas that don't cite evidence are rejected by the gate.
 
@@ -45,12 +46,13 @@ Pure divergence, no search. Thirteen lens agents — contrarian, first principle
 
 ## The gates every idea must pass
 
-The point of this plugin isn't the divergence — it's that **convergence is delegated to code**. Every idea passes four gates before reaching the shortlist.
+The point of this plugin isn't the divergence — it's that **convergence is delegated to code**. Every idea passes five gates before reaching the shortlist.
 
-1. **Red-team** — hunts structural flaws (constraint violations, self-contradictions, anti-goal breaches) and kills with a written reason. "Hard" is not a kill reason.
-2. **2-3 independent judges** — score 5 axes blind to each other: impact `.30` · feasibility `.25` · novelty `.20` · fit `.15` · timing `.10` (weights configurable per session)
-3. **`validate_ideas.py`** — **computes** the ranking from judge medians × weights. The shortlist file only exists after this gate passes, so the LLM cannot hand-pick winners even if it wanted to.
-4. **Wildcard seat** — if the top ranks are all safe bets, code swaps the last seat for the highest-ranked wild idea (wildness ≥ 4).
+1. **Prior-art check** — existing products are searched per idea cluster and attached as URL-backed evidence cards (competitors can't be invented either); every idea gets a saturation score (0-5). Runs in both modes — diverge freely, converge on evidence.
+2. **Red-team** — hunts structural flaws (constraint violations, self-contradictions, anti-goal breaches) and kills with a written reason. "Hard" is not a kill reason — but "a mature free product already does this and there's no wedge" is.
+3. **2-3 independent judges** — score 5 axes blind to each other: impact `.30` · feasibility `.25` · novelty `.20` · fit `.15` · timing `.10`. **Novelty is scored only against the attached prior-art list** — no scoring from memory.
+4. **`validate_ideas.py`** — **computes** the ranking from judge medians × weights. **Ideas in saturated niches (especially with free/OSS incumbents) get their novelty capped by code and cannot pass without a concrete wedge.** The shortlist file only exists after this gate passes, so the LLM cannot hand-pick winners even if it wanted to.
+5. **Wildcard seat** — if the top ranks are all safe bets, code swaps the last seat for the highest-ranked wild idea (wildness ≥ 4).
 
 The deep-dive stage has gates too: 2-3 execution approaches compared per concept, an MVP trimmed by YAGNI, and every riskiest assumption paired with a two-week test. And a **HARD-GATE — no implementation starts before the brief is approved.** Right before closing, `eval_briefs.py` scores leftover placeholders, missing evidence, and document consistency — a FAIL blocks the close.
 

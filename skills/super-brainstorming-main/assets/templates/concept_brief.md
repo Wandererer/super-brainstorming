@@ -26,6 +26,16 @@ lens: {LENS} · wildness: {WILDNESS} · rank: {RANK} ({WEIGHTED_TOTAL})
 | {EV_ID_1} | {EV_TYPE_1} | {EV_CLAIM_1} | [{EV_SOURCE_1}]({EV_URL_1}) |
 | {EV_ID_2} | {EV_TYPE_2} | {EV_CLAIM_2} | [{EV_SOURCE_2}]({EV_URL_2}) |
 
+## 기존 해법 & 쐐기 (Prior Art & Wedge) — saturation {SATURATION_SCORE}/5
+
+> Phase 4.5 선행기술 대조 결과. 이 표가 비어 있다면 "검색함, 없음"이 명시적으로 확인된 것이다.
+
+| 기존 제품 | 가격 | 하는 것 | 우리와의 차이 |
+|-----------|------|---------|---------------|
+| {COMPETITOR_1 ({COMP_EV_ID_1})} | {PRICING_1} | {WHAT_IT_DOES_1} | {DIFFERENCE_1} |
+
+**Wedge (그들이 구조적으로 못 따라오는 이유)**: {WEDGE_STATEMENT — 비즈니스 모델 충돌 / 플랫폼 제약 / 스케일의 족쇄. "더 잘 만들겠다"는 wedge가 아니다}
+
 ## 접근법 비교 (Approaches — 추천 먼저)
 
 > 항상 2-3개 대안을 트레이드오프와 함께, 추천안을 앞세워 제시한다.

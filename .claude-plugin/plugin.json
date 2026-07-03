@@ -1,7 +1,7 @@
 {
   "name": "super-brainstorming",
-  "version": "0.1.0",
-  "description": "AI-powered brainstorming with two divergence modes — research-first evidence mining (reviews/communities/competitor gaps/trends) and creative thinking lenses — plus deterministic scoring gates and research handoff",
+  "version": "0.2.0",
+  "description": "AI-powered brainstorming with two divergence modes — research-first evidence mining (reviews/communities/competitor gaps/trends/existing solutions) and creative thinking lenses — plus prior-art saturation gates, deterministic scoring, and research handoff",
   "author": {
     "name": "Wandererer",
     "url": "https://github.com/Wandererer"

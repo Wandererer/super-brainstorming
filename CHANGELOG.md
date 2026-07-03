@@ -2,6 +2,38 @@
 
 All notable changes to super-brainstorming will be documented in this file.
 
+## [0.2.0] - 2026-07-03
+
+### Added — supply-side check (me-too ideas can no longer win)
+
+The pipeline mined demand (complaints, gaps, trends) but never checked supply —
+an already-well-solved problem could top the shortlist on estimated novelty.
+This release applies the core philosophy ("verdicts come from code gates, not
+prompt suggestions") to the supply side:
+
+- **`solution_saturation_miner`** (6th miner) — maps products already serving each
+  niche: app store charts, Product Hunt, GitHub. New evidence type `existing_solution`
+  with a required `pricing` field (`free|freemium|paid|oss|unknown`).
+- **Phase 4.5 prior-art check** (both modes) — one agent searches per idea CLUSTER
+  (not per card — cost contract), registers competitors as URL-backed evidence cards
+  (`ev_7xx` — competitors can't be invented), and attaches a `saturation` block
+  (score 0-5, competitor_ids, wedge) to every idea.
+- **Saturation gate in `validate_ideas.py`** — saturated niches (score ≥4, or 3 with
+  a free/OSS incumbent) get novelty medians capped at 2.0 by code and **require a
+  concrete wedge** (exit 1 without one); crowded niches (3) cap at 3.0. Missing
+  prior-art check is a process violation. Unknown competitor references are hard errors.
+- **Tool-grounded novelty** — judges score novelty ONLY against the attached
+  prior-art list; "searched, none found" is explicit positive evidence. Scoring
+  from memory is banned in the judge contract.
+- **Red-team me-too standard** — "a mature free product already does this well and
+  the card has no wedge" is now a fatal flaw (with the competitor named), not a
+  soft objection. A concrete structural wedge saves the card.
+- **Competitive-landscape handoff query** — every selected concept now ships TWO
+  validation queries: riskiest assumption + "who already sells this (pricing,
+  free/OSS, traction)".
+- Evidence digest gains a per-niche **Saturation Map**; concept briefs gain a
+  **Prior Art & Wedge** section.
+
 ## [0.1.0] - 2026-07-02
 
 ### Added

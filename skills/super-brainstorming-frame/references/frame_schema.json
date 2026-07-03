@@ -3,11 +3,16 @@
   "title": "Super Brainstorming Frame",
   "description": "Structured input that skips Phase 1 (Framing). Produced by the frame builder sub-skill or written by hand.",
   "type": "object",
-  "required": ["frame"],
+  "required": [
+    "frame"
+  ],
   "properties": {
     "frame": {
       "type": "object",
-      "required": ["topic", "hmw"],
+      "required": [
+        "topic",
+        "hmw"
+      ],
       "properties": {
         "topic": {
           "type": "string",
@@ -19,7 +24,13 @@
         },
         "goal_type": {
           "type": "string",
-          "enum": ["new_product", "feature", "growth", "pivot", "other"],
+          "enum": [
+            "new_product",
+            "feature",
+            "growth",
+            "pivot",
+            "other"
+          ],
           "default": "new_product"
         },
         "context": {
@@ -28,22 +39,30 @@
         },
         "assets": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "What the user already has — skills, audience, codebase, data"
         },
         "constraints": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "Real-world limits — team size, runway, deadline. Feasibility is scored against these."
         },
         "success_criteria": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "What makes this session a success — checkable at session end"
         },
         "anti_goals": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "minItems": 1,
           "description": "What is explicitly NOT wanted — divergence agents treat these as off-limits"
         }
@@ -54,7 +73,10 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["creative", "research_first"],
+          "enum": [
+            "creative",
+            "research_first"
+          ],
           "default": "creative",
           "description": "creative = thinking-lens divergence (default). research_first = evidence mining across many sources THEN evidence-grounded ideation (research → brainstorming); every idea card must cite evidence_ids."
         },
@@ -67,10 +89,11 @@
               "community_miner",
               "competitor_gap_miner",
               "trend_miner",
-              "market_data_miner"
+              "market_data_miner",
+              "solution_saturation_miner"
             ]
           },
-          "description": "research_first mode: which evidence miners to deploy. If omitted, all 5."
+          "description": "research_first mode: which evidence miners to deploy. If omitted, all 6 (incl. solution_saturation_miner — maps existing products per niche)."
         },
         "evidence_per_miner": {
           "type": "integer",
@@ -118,7 +141,11 @@
         },
         "wildness_appetite": {
           "type": "string",
-          "enum": ["safe", "balanced", "wild"],
+          "enum": [
+            "safe",
+            "balanced",
+            "wild"
+          ],
           "default": "balanced"
         },
         "wildcard": {
@@ -177,11 +204,26 @@
           "type": "object",
           "description": "Per-axis weights. Normalized to sum 1 by validate_ideas.py.",
           "properties": {
-            "novelty": {"type": "number", "minimum": 0},
-            "impact": {"type": "number", "minimum": 0},
-            "feasibility": {"type": "number", "minimum": 0},
-            "fit": {"type": "number", "minimum": 0},
-            "timing": {"type": "number", "minimum": 0}
+            "novelty": {
+              "type": "number",
+              "minimum": 0
+            },
+            "impact": {
+              "type": "number",
+              "minimum": 0
+            },
+            "feasibility": {
+              "type": "number",
+              "minimum": 0
+            },
+            "fit": {
+              "type": "number",
+              "minimum": 0
+            },
+            "timing": {
+              "type": "number",
+              "minimum": 0
+            }
           }
         }
       }
@@ -198,7 +240,11 @@
         },
         "handoff": {
           "type": "string",
-          "enum": ["insane-research", "spec", "none"],
+          "enum": [
+            "insane-research",
+            "spec",
+            "none"
+          ],
           "default": "insane-research"
         },
         "language": {

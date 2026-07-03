@@ -17,6 +17,16 @@ validate_ideas.py — super-brainstorming의 **결정론적 수렴 게이트** (
 wildcard seat (브레인스토밍 4원칙 "과격한 아이디어 환영"의 코드화):
   - 쇼트리스트 상위 N에 wildness>=4가 없으면 마지막 1석을 최고 순위 wild 후보로 교체.
 
+포화 게이트 (me-too 방지의 코드화 — 양 모드 공통):
+  - Phase 4.5 선행기술 대조가 각 카드에 saturation 블록을 붙인다:
+      {"checked": true, "score": 0-5, "competitor_ids": ["ev_.."], "wedge": null|"...", "note": ""}
+    competitor_ids는 existing_solution evidence 카드(URL 하드체크) 참조 — 경쟁사도 지어내지 못한다.
+  - saturated = score>=4 또는 (score==3 이고 competitor 중 무료/OSS 존재)
+      → novelty 중앙값을 2.0으로 상한 + wedge 필수(없으면 exit 1) + saturation_flag
+  - crowded  = score==3 (무료 경쟁자 없음)
+      → novelty 중앙값을 3.0으로 상한, wedge 없으면 경고
+  - 후보 카드에 saturation.checked/score가 없으면 절차 위반 (exit 1 — Phase 4.5 미수행)
+
 research_first 모드 (frame.divergence.mode == "research_first"):
   - "research 후 brainstorming" — Phase 3a에서 마이너들이 여러 소스를 뒤져
     evidence_ledger.jsonl을 만들고, Phase 3b의 아이디어 카드는 evidence_ids로
@@ -97,6 +107,8 @@ REQUIRED_EVIDENCE_FIELDS = ("evidence_id", "claim", "source_url", "miner")
 ID_RE = re.compile(r"^idea_\d{3,}$")
 EV_ID_RE = re.compile(r"^ev_\d{3,}$")
 WILD_THRESHOLD = 4
+FREE_PRICING = {"free", "oss"}
+NOVELTY_CAP = {"saturated": 2.0, "crowded": 3.0}  # scoring_rubric.md 포화 앵커와 연동
 
 
 def _read_jsonl(path):
@@ -202,6 +214,19 @@ def check_cards(cards):
             not isinstance(ev_refs, list) or any(not isinstance(e, str) for e in ev_refs)
         ):
             hard.append(f"'{cid}': evidence_ids는 문자열 배열이어야 함 (현재 {ev_refs!r})")
+        sat = card.get("saturation")
+        if sat is not None:
+            if not isinstance(sat, dict):
+                hard.append(f"'{cid}': saturation은 객체여야 함 (현재 {sat!r})")
+            else:
+                sc = sat.get("score")
+                if sc is not None and (not isinstance(sc, int) or not 0 <= sc <= 5):
+                    hard.append(f"'{cid}': saturation.score는 0-5 정수여야 함 (현재 {sc!r})")
+                comp = sat.get("competitor_ids")
+                if comp is not None and (
+                    not isinstance(comp, list) or any(not isinstance(x, str) for x in comp)
+                ):
+                    hard.append(f"'{cid}': competitor_ids는 문자열 배열이어야 함 (현재 {comp!r})")
         for entry in card.get("judge_scores") or []:
             if not isinstance(entry, dict) or not entry.get("judge"):
                 hard.append(f"'{cid}': judge_scores 항목에 judge 이름 없음")
@@ -239,6 +264,27 @@ def score_card(card, weights):
     medians = {axis: round(median(e[axis] for e in judges), 2) for axis in AXES}
     total = round(sum(weights[axis] * medians[axis] for axis in AXES), 3)
     return medians, total
+
+
+def saturation_level(card, evidence_by_id):
+    """포화 수준 판정 — 'saturated' | 'crowded' | None. scoring_rubric.md 앵커와 연동.
+
+    saturated: score>=4 또는 (score==3 이고 무료/OSS 경쟁자 존재) → novelty 상한 2.0 + wedge 필수
+    crowded:   score==3 (무료 경쟁자 없음)                        → novelty 상한 3.0
+    """
+    sat = card.get("saturation") if isinstance(card.get("saturation"), dict) else {}
+    score = sat.get("score")
+    if not sat.get("checked") or not isinstance(score, int):
+        return None
+    has_free = any(
+        str((evidence_by_id.get(c) or {}).get("pricing", "")).strip().lower() in FREE_PRICING
+        for c in (sat.get("competitor_ids") or [])
+    )
+    if score >= 4 or (score == 3 and has_free):
+        return "saturated"
+    if score == 3:
+        return "crowded"
+    return None
 
 
 def collect_violations(candidates, hybrids, lenses, config, mode, evidence_by_id):
@@ -288,6 +334,15 @@ def collect_violations(candidates, hybrids, lenses, config, mode, evidence_by_id
                     f"  - {cid}: 근거 {len(refs)}건 < min_evidence_refs "
                     f"{config['min_evidence_refs']} (근거 없는 카드 — 재발굴 또는 park/kill)"
                 )
+        # 포화 게이트 — 양 모드 공통 (수렴은 근거로)
+        sat = card.get("saturation") if isinstance(card.get("saturation"), dict) else {}
+        if not sat.get("checked") or not isinstance(sat.get("score"), int):
+            violations.append(f"  - {cid}: 선행기술 대조 미수행 (Phase 4.5 — saturation.checked/score 필요)")
+        elif saturation_level(card, evidence_by_id) == "saturated" and not (sat.get("wedge") or "").strip():
+            violations.append(
+                f"  - {cid}: 포화 시장(saturation {sat.get('score')})인데 wedge 없음 — "
+                f"기존 해법 대비 쐐기를 명시하거나 park/kill"
+            )
     return violations
 
 
@@ -299,6 +354,12 @@ def collect_warnings(ranked, cards):
             f"wild 후보 없음 (wildness>={WILD_THRESHOLD}) — 발산이 안전지대에 머물렀을 수 있음. "
             f"와일드카드 렌즈 추가를 고려."
         )
+    for c in ranked:
+        sat = c.get("saturation") or {}
+        if sat.get("level") == "crowded" and not (sat.get("wedge") or "").strip():
+            warnings.append(
+                f"{c['idea_id']}: crowded 시장(saturation 3)인데 wedge 미기재 — 브리프 단계에서 요구됨"
+            )
     # rubber-stamp 심사 감지: 한 judge가 5개 이상 아이디어에 동일 튜플 반복(60%+)
     by_judge = {}
     for card in cards:
@@ -350,11 +411,16 @@ def validate(ledger_path, frame_path, evidence_path, out_dir, state_path):
         hard_errors.extend(ev_errs)
         evidence_by_id = ev_by_id
 
-    # 참조 무결성: 카드가 인용한 evidence_ids는 실존해야 함 (모드 무관 — 없는 근거 인용 금지)
+    # 참조 무결성: 카드가 인용한 evidence_ids / competitor_ids는 실존해야 함
+    # (모드 무관 — 없는 근거·없는 경쟁사 인용 금지)
     for cid, card in cards_by_id.items():
         unknown = [e for e in (card.get("evidence_ids") or []) if e not in evidence_by_id]
         if unknown:
             hard_errors.append(f"'{cid}': 미등록 evidence_id {unknown}")
+        sat = card.get("saturation") if isinstance(card.get("saturation"), dict) else {}
+        unknown_comp = [c for c in (sat.get("competitor_ids") or []) if c not in evidence_by_id]
+        if unknown_comp:
+            hard_errors.append(f"'{cid}': 미등록 competitor_id {unknown_comp} (경쟁사도 evidence 카드로 등록)")
 
     # 하드 에러면 산출물 쓰지 않고 즉시 실패 (exit 2)
     if hard_errors:
@@ -376,6 +442,15 @@ def validate(ledger_path, frame_path, evidence_path, out_dir, state_path):
         medians, total = score_card(card, weights)
         if medians is None:
             continue
+        # 포화 게이트: novelty 상한 — 심사가 후하게 줘도 코드가 깎는다 (me-too 방지)
+        sat = card.get("saturation") if isinstance(card.get("saturation"), dict) else {}
+        level = saturation_level(card, evidence_by_id)
+        novelty_capped = False
+        cap = NOVELTY_CAP.get(level)
+        if cap is not None and medians["novelty"] > cap:
+            medians = dict(medians, novelty=cap)
+            total = round(sum(weights[a] * medians[a] for a in AXES), 3)
+            novelty_capped = True
         entry = {
             "idea_id": card["idea_id"],
             "title": card["title"],
@@ -385,6 +460,14 @@ def validate(ledger_path, frame_path, evidence_path, out_dir, state_path):
             "parent_ids": card.get("parent_ids") or [],
             "evidence_ids": card.get("evidence_ids") or [],
             "red_team_objections": (card.get("red_team") or {}).get("objections") or [],
+            "saturation": {
+                "score": sat.get("score"),
+                "level": level,
+                "flag": level == "saturated",
+                "wedge": sat.get("wedge"),
+                "competitor_ids": sat.get("competitor_ids") or [],
+                "novelty_capped": novelty_capped,
+            },
             "medians": medians,
             "weighted_total": total,
         }
@@ -455,6 +538,8 @@ def validate(ledger_path, frame_path, evidence_path, out_dir, state_path):
         "lenses": sorted(lenses),
         "evidence_count": len(evidence_by_id),
         "miners": sorted({e.get("miner") for e in evidence_by_id.values() if e.get("miner")}),
+        "saturated": sum(1 for c in ranked if (c.get("saturation") or {}).get("flag")),
+        "novelty_capped": sum(1 for c in ranked if (c.get("saturation") or {}).get("novelty_capped")),
     }
 
     if state_path and os.path.exists(state_path):
@@ -524,6 +609,10 @@ def _report(hard_errors, violations, warnings, shortlist, stats, signature, mode
             file=out,
         )
         print(f"  lenses={', '.join(stats['lenses'])}", file=out)
+        print(
+            f"  saturated={stats['saturated']}  novelty_capped={stats['novelty_capped']}",
+            file=out,
+        )
         if mode == "research_first":
             print(
                 f"  evidence={stats['evidence_count']}건  miners={', '.join(stats['miners'])}",

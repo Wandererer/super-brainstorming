@@ -18,7 +18,7 @@
 | | |
 |---|---|
 | **Input** | `artifacts/frame.json` (`divergence.mode` 포함) |
-| **Process** | **creative**: goal_type/wildness_appetite → 렌즈 4-8개 선택 → id block 배정. **research_first**: 마이너 선택(기본 5종) + evidence id block 배정 + 합성 렌즈 3종 고정 |
+| **Process** | **creative**: goal_type/wildness_appetite → 렌즈 4-8개 선택 → id block 배정. **research_first**: 마이너 선택(기본 6종) + evidence id block 배정 + 합성 렌즈 3종 고정 |
 | **Output** | `artifacts/lens_plan.json`: `{"mode": "creative", "lenses": [{"key": "contrarian", "id_block": "3xx", "research_flavored": false}], "miners": [], "ideas_per_lens": 6, "wildcards": ["random_stimulus"], "target_total": 36}` |
 | **Exit criteria** | 사용자 계획 승인 (HMW + 추론 가정 + **mode** + 라인업 + 목표 수 + handoff 기본값을 한 번에 제시) |
 
@@ -27,7 +27,8 @@
 - 렌즈 k (1부터) → `idea_{k}01` ~ `idea_{k}99` (예: 렌즈 3의 다섯 번째 아이디어 = `idea_305`)
 - 하이브리드(Phase 4) → `idea_901` ~ `idea_999`
 - 전 세션에서 idea_id는 `^idea_\d{3,}$` 형식, 중복 금지 (게이트 하드 체크)
-- **research_first evidence 블록**: `ev_1xx` review_miner / `ev_2xx` community_miner / `ev_3xx` competitor_gap_miner / `ev_4xx` trend_miner / `ev_5xx` market_data_miner — `^ev_\d{3,}$` 형식, 중복 금지
+- **research_first evidence 블록**: `ev_1xx` review_miner / `ev_2xx` community_miner / `ev_3xx` competitor_gap_miner / `ev_4xx` trend_miner / `ev_5xx` market_data_miner / `ev_6xx` solution_saturation_miner — `^ev_\d{3,}$` 형식, 중복 금지
+- **Phase 4.5 선행기술 블록 (양 모드)**: `ev_7xx` prior-art agent의 existing_solution 카드
 - **research_first 합성 렌즈 블록**: `idea_1xx` pain_to_product / `idea_2xx` gap_wedge / `idea_3xx` trend_collision
 
 ## Phase 3: Parallel Divergence (모드 분기)
@@ -49,7 +50,7 @@
 | | |
 |---|---|
 | **Input** | `lens_plan.json`(miners), frame, **오늘 날짜** |
-| **Process** | 마이너당 에이전트 1개(기본 5종), 2-3개씩 스로틀 — 각자 다른 소스 클래스 (WebSearch/WebFetch, 연도 필수 부착) |
+| **Process** | 마이너당 에이전트 1개(기본 6종), 2-3개씩 스로틀 — 각자 다른 소스 클래스 (WebSearch/WebFetch, 연도 필수 부착) |
 | **Output** | `artifacts/evidence_ledger.jsonl` append (스키마: SKILL.md) + `outputs/04_evidence_digest.md` |
 | **Exit criteria** | evidence ≥ min_evidence(기본 15), 마이너 ≥ min_miners(기본 3) — 미달 마이너는 재실행/메인 스레드 폴백 |
 | **불가침** | **URL 없으면 카드 금지** (source_url 하드 체크). 마이너는 아이디어를 내지 않는다 — 채굴만 |
@@ -74,11 +75,21 @@
 | **Exit criteria** | 하이브리드 ≥ 1 (게이트 exit 1 항목), parent_ids 참조 무결성 (게이트 exit 2 항목) |
 | **불가침** | ledger는 append-only — 기존 카드 수정·삭제 금지 (red-team/judge 병합은 Phase 5) |
 
+## Phase 4.5: Prior-Art Check (선행기술 대조 — 양 모드 공통)
+
+| | |
+|---|---|
+| **Input** | 전체 후보 카드 (클러스터로 그룹핑), **오늘 날짜** |
+| **Process** | prior-art 에이전트 1개 — **클러스터 단위** 검색 1-2회(카드마다 아님 — 비용 계약) → 발견한 기존 제품을 existing_solution evidence 카드(ev_7xx, `pricing` 필수)로 append → 카드별 saturation 라인 산출 |
+| **Output** | evidence_ledger에 existing_solution 카드 append + 각 후보 카드에 `saturation` 블록 병합: `{"checked": true, "score": 0-5, "competitor_ids": [...], "wedge": null\|"...", "note": ""}` |
+| **Exit criteria** | 전 후보에 saturation.checked + score (게이트 exit 1 항목), competitor_ids 참조 무결성 (exit 2 항목) |
+| **불가침** | 경쟁사도 URL 필수 — evidence 카드 없이 competitor_ids 금지. creative 모드도 수행한다 (발산은 검색 없이, **수렴은 근거로**) |
+
 ## Phase 5: Convergence
 
 | | |
 |---|---|
-| **Input** | 전체 ledger, frame(가중치·mode), evidence_ledger(research_first), scoring_rubric.md 앵커 |
+| **Input** | 전체 ledger (saturation 블록 포함), frame(가중치·mode), evidence_ledger, scoring_rubric.md 앵커 |
 | **Process** | ① red-team 1개 → red_team 블록 병합, fatal_flaw → status="killed"+kill_reason (research_first: 장식용 인용 — 근거가 주장을 실제로 지지하지 않는 카드 — 도 fatal 후보) ② 심사 2-3인 독립 (red-team 결과는 보되 서로는 못 봄) → judge_scores 병합 ③ `validate_ideas.py --session <dir>` |
 | **Output** | `outputs/ranked_ideas.json`, `outputs/shortlist.json`, `outputs/parked_and_killed.json`, `state.json.convergence` (signature 포함) |
 | **Exit criteria** | **exit 0** — exit 2는 데이터 수정 후 재실행, exit 1은 누락 절차 수행 후 재실행. exit 0 전에 Phase 6 진입 금지 |
@@ -107,7 +118,7 @@
 
 | 전이 | 게이트 | 판정자 |
 |------|--------|--------|
-| Phase 5 → 6 | 스키마 무결성 + 절차 완료(red-team/심사/발산량/하이브리드) + 랭킹 계산, (research_first) evidence 무결성·근거 인용·채굴량·마이너 다양성 | `validate_ideas.py` (exit 0) |
+| Phase 5 → 6 | 스키마 무결성 + 절차 완료(red-team/심사/발산량/하이브리드/**선행기술 대조**) + 랭킹 계산(**포화 시 novelty 상한 + wedge 강제**), (research_first) evidence 무결성·근거 인용·채굴량·마이너 다양성 | `validate_ideas.py` (exit 0) |
 | Phase 7 → 마감 | placeholder 0 + 브리프↔쇼트리스트 매핑 + 요약 커버리지 + parking lot 완전성 + 핸드오프 존재, (research_first) 브리프 근거 인용 + evidence digest 존재 | `eval_briefs.py` (PASS) |
 
 두 게이트 모두 `state.json`에 서명/지표를 남긴다. `passed: true`가 없으면 그 게이트는 실행되지 않은 것이다.

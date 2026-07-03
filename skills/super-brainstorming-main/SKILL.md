@@ -227,7 +227,8 @@ HMW = "어떻게 하면 [타깃]이 [맥락/제약]에서 [원하는 변화]를 
 - Assign each lens an **id block** (lens k → `idea_k01`…`idea_k99`, hybrids → `idea_9xx`)
 
 **research_first 모드:**
-- Select miners (기본: 5종 전부 — `review_miner`, `community_miner`, `competitor_gap_miner`, `trend_miner`, `market_data_miner`), evidence id blocks `ev_1xx`~`ev_5xx`
+- Select miners (기본: 6종 전부 — `review_miner`, `community_miner`, `competitor_gap_miner`, `trend_miner`, `market_data_miner`, `solution_saturation_miner`), evidence id blocks `ev_1xx`~`ev_6xx`
+  - 5종은 **수요**(불만·빈틈·트렌드)를, `solution_saturation_miner`는 **공급**(니치별 기존 제품, 가격/무료 여부)을 캔다
 - Synthesis lenses 3종 고정: `pain_to_product`(1xx), `gap_wedge`(2xx), `trend_collision`(3xx)
 - Set `evidence_per_miner` (default 8) → target **30+ evidence cards**
 
@@ -262,7 +263,7 @@ HMW = "어떻게 하면 [타깃]이 [맥락/제약]에서 [원하는 변화]를 
 #### Mode B: `research_first` (검색 발굴 — research 후 brainstorming)
 
 **Phase 3a — Evidence Mining (증거 채굴):**
-- Deploy miners (기본 5종) with prompts from `lens_library.md`, throttled 2-3 concurrent — 각자 **다른 소스 클래스**를 판다 (multi-modal sweep: 리뷰 / 커뮤니티 불만·우회로 / 경쟁사 빈틈 / 트렌드 / 시장 데이터)
+- Deploy miners (기본 6종) with prompts from `lens_library.md`, throttled 2-3 concurrent — 각자 **다른 소스 클래스**를 판다 (multi-modal sweep: 리뷰 / 커뮤니티 불만·우회로 / 경쟁사 빈틈 / 트렌드 / 시장 데이터 / **기존 해법 포화도**)
 - **URL 없으면 카드 금지** — 마이너는 실제로 연 페이지만 인용한다 (게이트가 source_url을 하드 체크)
 - Append evidence cards to `artifacts/evidence_ledger.jsonl` (schema below)
 - 목표 미달(`min_evidence`, 기본 15) 시 부족한 마이너를 재실행하거나 메인 스레드에서 직접 채굴
@@ -281,6 +282,22 @@ HMW = "어떻게 하면 [타깃]이 [맥락/제약]에서 [원하는 변화]를 
 - **research_first 모드**: 하이브리드는 부모 카드들의 `evidence_ids` 합집합을 물려받는다 (근거 계보 유지)
 - Append hybrids to the ledger — never modify or delete existing cards (append-only)
 
+### Phase 4.5: Prior-Art Check (선행기술 대조 — 양 모드 공통)
+
+발산이 **수요**에서 나왔어도, 수렴 전에 **공급**(이미 존재하는 해법)과 대조해야 me-too가 걸러진다.
+
+- Deploy 1 prior-art agent (프롬프트: lens_library.md) — **아이디어 클러스터 단위로** 검색 1-2회 (카드마다 아님 — 비용 계약)
+- 발견한 기존 제품은 `existing_solution` evidence 카드(id block `ev_7xx`, **URL·pricing 필수**)로 evidence ledger에 append — **경쟁사도 지어내지 못한다** (게이트가 competitor_ids 참조 무결성을 하드 체크)
+- 각 후보 카드에 `saturation` 블록 병합: `{"checked": true, "score": 0-5, "competitor_ids": ["ev_7xx"], "wedge": null|"기존 대비 구조적 쐐기 한 문장", "note": "score 0이면 '검색함, 없음'"}`
+- **creative 모드에서도 수행한다** — 발산은 검색 없이 자유롭게, 수렴은 근거로 차갑게. 이 단계에서 creative 세션에 evidence ledger가 처음 생길 수 있다
+
+#### ⚠️ 포화 게이트 (me-too 방지 — 코드 강제)
+
+anti-goal의 "me-too 금지"는 프롬프트 권고로는 무력하다. `validate_ideas.py`가 코드로 강제한다:
+- **saturated** (score≥4, 또는 3 + 무료/OSS 경쟁자) → **novelty 중앙값 2.0 상한** + **wedge 필수** (없으면 exit 1) + `saturation_flag`
+- **crowded** (score 3) → novelty 중앙값 3.0 상한, wedge 없으면 경고
+- 후보에 saturation.checked/score가 없으면 exit 1 (Phase 4.5 미수행)
+
 ### Phase 5: Convergence (수렴·평가)
 
 Three sub-steps, in order:
@@ -298,9 +315,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/scripts/validate_
 ```
 
 종료 코드에 따라:
-- **exit 2 (하드 에러)** — 스키마 깨짐·중복 idea_id·미등록 parent_id·점수 범위 위반, (research 모드) evidence 스키마 깨짐·**미등록 evidence_id 인용**·URL 아닌 source_url. 데이터를 고치고 재실행. **절대 Phase 6로 진행 금지.**
-- **exit 1 (프로세스 위반)** — red-team 미수행·심사 2인 미만·발산량 미달·하이브리드 없음, (research 모드) **근거 없는 카드**(`evidence_ids < min_evidence_refs`)·채굴 빈약(`min_evidence` 미달)·마이너 다양성 미달. 누락된 절차를 수행해 ledger를 갱신하고 재실행.
-- **exit 0 (통과)** — `outputs/ranked_ideas.json` + `outputs/shortlist.json` 생성, `state.json.convergence.signature` 기록 완료. 이제 Phase 6 진행 가능.
+- **exit 2 (하드 에러)** — 스키마 깨짐·중복 idea_id·미등록 parent_id·**미등록 competitor_id**·점수 범위 위반, (research 모드) evidence 스키마 깨짐·**미등록 evidence_id 인용**·URL 아닌 source_url. 데이터를 고치고 재실행. **절대 Phase 6로 진행 금지.**
+- **exit 1 (프로세스 위반)** — red-team 미수행·심사 2인 미만·발산량 미달·하이브리드 없음·**선행기술 대조 미수행(Phase 4.5)**·**포화인데 wedge 없음**, (research 모드) **근거 없는 카드**(`evidence_ids < min_evidence_refs`)·채굴 빈약(`min_evidence` 미달)·마이너 다양성 미달. 누락된 절차를 수행해 ledger를 갱신하고 재실행.
+- **exit 0 (통과)** — `outputs/ranked_ideas.json` + `outputs/shortlist.json` 생성 (**포화 아이디어는 novelty가 코드로 상한 처리된 상태**), `state.json.convergence.signature` 기록 완료. 이제 Phase 6 진행 가능.
 
 **Phase 6는 오직 `outputs/shortlist.json`의 아이디어만 입력으로 받는다.** ledger에서 임의로 골라 브리프를 쓰지 않는다 — 게이트를 건너뛰면 심화할 입력 자체가 없다(자기파괴적 우회 불가). **wildcard seat**: 쇼트리스트 상위권에 wildness≥4가 없으면 마지막 1석을 최고 순위 wild 아이디어로 코드가 교체한다 — "과격한 아이디어 환영"을 프롬프트 권고가 아니라 코드로 보장.
 
@@ -340,7 +357,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/scripts/eval_brie
 
 `eval_briefs.py` 통과 후, frame의 `output.handoff`에 따라:
 
-1. **insane-research 검증** (기본 추천) — 각 선택 컨셉의 riskiest assumption을 검증 가능한 리서치 질문으로 변환해 `outputs/handoff.md`에 기록: 자연어 커맨드 + insane-research의 query_schema를 따르는 structured JSON 쿼리. insane-research 플러그인이 설치되어 있으면 즉시 실행을 제안하고, 없으면 설치 안내와 함께 쿼리를 전달한다. (발산 → 검증 2단계 워크플로우)
+1. **insane-research 검증** (기본 추천) — 각 선택 컨셉마다 **검증 쿼리 2종 필수**를 `outputs/handoff.md`에 기록: ① **riskiest assumption 쿼리** (실현성·수요·WTP) ② **경쟁 지형 쿼리** — "누가 이미 이걸 파나: 기존 제품, 가격·무료 여부, traction" (Phase 4.5는 클러스터 단위 스냅샷이므로, 선택된 컨셉은 제품 단위 정밀 검증으로 재확인). 자연어 커맨드 + insane-research의 query_schema를 따르는 structured JSON 쿼리. insane-research 플러그인이 설치되어 있으면 즉시 실행을 제안하고, 없으면 설치 안내와 함께 쿼리를 전달한다. (발산 → 검증 2단계 워크플로우)
 2. **스펙/PRD 문서화** — 브리프를 설계 문서의 입력으로 정리. show-me-the-prd 플러그인이 설치되어 있으면 안내한다.
 3. **종료** — handoff.md는 그래도 생성한다(나중을 위해).
 
@@ -358,6 +375,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/scripts/eval_brie
 | **양이 질을 낳는다** (quantity) | 3 | 목표 30+, `validate_ideas.py`의 `min_ideas` 게이트 (exit 1) |
 | **과격한 아이디어 환영** (wild ideas) | 3-5 | `wildness` 필드(1-5) + 쇼트리스트 **wildcard seat** (코드 강제) |
 | **결합·편승** (build on ideas) | 4 | 하이브리드 에이전트 필수 — `min_hybrids` 게이트 (exit 1) |
+| **me-too 금지** (supply-check) | 4.5-5 | 선행기술 대조 필수 + 포화 시 novelty 상한·wedge 강제 — 코드 (`validate_ideas.py`) |
 | **판단은 근거로** (converge cold) | 5 | 독립 심사 2-3인 + median 집계 + 가중치 — 전부 코드 (`validate_ideas.py`) |
 
 ---
@@ -371,11 +389,12 @@ Deploy up to 5-8 lens agents — but run them in **throttled batches of 2-3 conc
 | Agent Type | Count | Phase | Mode | Focus | Output |
 |------------|-------|-------|------|-------|--------|
 | Divergence (lens) | 4-8 | 3 | creative | One thinking lens each, no criticism | JSONL idea cards |
-| Evidence miner | 3-5 | 3a | research_first | One source class each (리뷰/커뮤니티/경쟁사/트렌드/시장) — URL 필수 | JSONL evidence cards |
+| Evidence miner | 3-6 | 3a | research_first | One source class each (리뷰/커뮤니티/경쟁사 빈틈/트렌드/시장/**기존 해법**) — URL 필수 | JSONL evidence cards |
 | Synthesis lens | 3 | 3b | research_first | Evidence → ideas, `evidence_ids` 인용 필수 | JSONL idea cards |
 | Hybrid (cross-pollination) | 1 | 4 | 공통 | Combine across lenses, SCAMPER mutation | JSONL hybrid cards with parent_ids |
-| Red-team | 1 | 5 | 공통 | Objections, fatal flaws — kill with reasons | red_team blocks per idea |
-| Judge | 2-3 | 5 | 공통 | Independent 5-axis scoring (rubric SSOT) | judge_scores blocks per idea |
+| **Prior-art** | 1 | 4.5 | 공통 | 클러스터 단위 기존 제품 검색 — 공급측 대조 | existing_solution cards + saturation blocks |
+| Red-team | 1 | 5 | 공통 | Objections, fatal flaws (me-too 포함) — kill with reasons | red_team blocks per idea |
+| Judge | 2-3 | 5 | 공통 | Independent 5-axis scoring — novelty는 첨부된 선행기술 기준 | judge_scores blocks per idea |
 
 Launch Task calls in **throttled batches (2-3 concurrent)** with `mode: "bypassPermissions"`. Each agent receives a focused prompt from `references/lens_library.md` with the frame, today's date, its id block, and citation-style output contract.
 
@@ -451,23 +470,25 @@ For all agent prompt templates:
 ### idea_ledger.jsonl Schema (one JSON per line, append-only)
 
 ```json
-{"idea_id": "idea_101", "title": "짧은 제목", "one_liner": "한 문장 요약", "mechanism": "어떻게 작동하는가 2-3문장", "target_user": "누구를 위한 것", "lens": "contrarian", "wildness": 3, "parent_ids": [], "evidence_ids": [], "assumptions": ["깔린 가정 1"], "evidence": "research-flavored 렌즈가 찾은 근거 (URL 포함, 선택)", "status": "raw", "kill_reason": null, "red_team": {"checked": false, "fatal_flaw": null, "objections": []}, "judge_scores": []}
+{"idea_id": "idea_101", "title": "짧은 제목", "one_liner": "한 문장 요약", "mechanism": "어떻게 작동하는가 2-3문장", "target_user": "누구를 위한 것", "lens": "contrarian", "wildness": 3, "parent_ids": [], "evidence_ids": [], "assumptions": ["깔린 가정 1"], "evidence": "research-flavored 렌즈가 찾은 근거 (URL 포함, 선택)", "status": "raw", "kill_reason": null, "saturation": {"checked": false, "score": null, "competitor_ids": [], "wedge": null, "note": ""}, "red_team": {"checked": false, "fatal_flaw": null, "objections": []}, "judge_scores": []}
 ```
 
 - `status` ∈ `raw` | `hybrid` | `parked` | `killed` — **shortlist 여부는 status가 아니라 `outputs/shortlist.json`이 결정** (코드 산출물)
 - `judge_scores` entry: `{"judge": "judge_1", "novelty": 4, "impact": 5, "feasibility": 3, "fit": 4, "timing": 5, "note": "한 줄 근거"}`
 - `parent_ids`는 하이브리드 필수, 참조 무결성은 게이트가 하드 체크
 - `evidence_ids` — **research_first 모드 필수 (≥ min_evidence_refs)**, evidence_ledger의 id 참조. 미등록 인용은 하드 에러
+- `saturation` — **양 모드 필수 (Phase 4.5가 병합)**: score 0-5, competitor_ids는 existing_solution evidence 참조(미등록 = 하드 에러), saturated면 wedge 필수
 
-### evidence_ledger.jsonl Schema (research_first 모드, one JSON per line)
+### evidence_ledger.jsonl Schema (one JSON per line)
 
 ```json
-{"evidence_id": "ev_201", "type": "complaint", "claim": "무엇이 관찰되었나 한 문장", "quote": "원문 짧은 인용", "source_url": "https://...", "source_name": "Reddit r/xxx", "date": "2026-05", "miner": "community_miner", "strength": 3, "freshness": "2026"}
+{"evidence_id": "ev_201", "type": "complaint", "claim": "무엇이 관찰되었나 한 문장", "quote": "원문 짧은 인용", "source_url": "https://...", "source_name": "Reddit r/xxx", "date": "2026-05", "miner": "community_miner", "strength": 3, "freshness": "2026", "pricing": null}
 ```
 
-- `type` ∈ `complaint` | `workaround` | `gap` | `trend` | `market_data` | `competitor`
+- `type` ∈ `complaint` | `workaround` | `gap` | `trend` | `market_data` | `competitor` | `existing_solution`
 - **`source_url`은 http(s) URL 하드 체크** — URL 없으면 카드 금지 (마이너 조작 방지)
 - `strength`: 1 = 한 명의 의견 ~ 5 = 광범위·정량 근거
+- `pricing` — `existing_solution` 카드 필수: `free` | `freemium` | `paid` | `oss` | `unknown` (무료/OSS 존재가 포화 판정을 좌우)
 
 For detailed phase input/output contracts:
 `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/references/phase_contracts.md`
@@ -594,12 +615,14 @@ for phase_num in range(1, 8):
 - [ ] (research_first) 15+ evidence cards from ≥3 miners, all with real URLs
 - [ ] (research_first) Every candidate cites evidence_ids; 04_evidence_digest.md written
 - [ ] Hybrids exist with valid parent_ids (research_first: 부모 evidence_ids 승계)
+- [ ] Every candidate has a saturation block (Phase 4.5) — competitors registered as evidence with URLs
+- [ ] Saturated ideas either carry a concrete wedge or were killed/parked with the competitor named
 - [ ] Every candidate has red_team block and ≥2 judge scores
 - [ ] `validate_ideas.py` exit 0 — `state.json.convergence.passed == true`
 - [ ] Shortlist includes a wildcard seat (or none existed — warning logged)
 - [ ] Every selected idea has an approved concept brief with 2-3 approaches and YAGNI Out list
 - [ ] `eval_briefs.py` verdict PASS — `state.json.brief_qa.passed == true`
-- [ ] handoff.md has a ready /insane-research query per selected concept
+- [ ] handoff.md has TWO queries per selected concept — riskiest assumption + competitive landscape
 - [ ] No implementation was started (HARD-GATE respected)
 
 ---
