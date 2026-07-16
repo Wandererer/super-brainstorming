@@ -29,20 +29,19 @@ description: This skill should be used when a user wants to build a structured b
 
 ### Phase 1: Discovery (REQUIRED)
 
-**EXECUTE:** 아래 JSON으로 AskUserQuestion 도구를 즉시 호출한다. Detect user language and translate all labels.
+**먼저 대화·프로젝트 컨텍스트에서 주제가 드러나는지 확인한다.**
+
+- 주제가 이미 분명하면(예: "1인 개발자용 노트 앱 아이디어") 그대로 채택하고 바로 아래 Goal 질문으로 넘어간다 — socratic_policy §1, 추론 가능한 것은 묻지 않는다.
+- 주제가 없으면 **평문으로** 물어본다. AskUserQuestion을 쓰지 않는다 — 그 옵션은 select 전용이라 자유 입력을 받지 못하고, 자유 입력은 "Other"가 받는다 (socratic_policy §2):
+  > "무엇에 대해 브레인스토밍하고 싶으신가요? 주제·문제·러프한 아이디어 아무거나 좋습니다. 영감이 필요하면 예시 프레임을 보여드릴 수도 있어요."
+  사용자가 예시를 요청하면 다음 경로에서 로드해 제시한다:
+  `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/examples/`
+
+주제를 확보한 뒤 **EXECUTE:** 아래 JSON으로 AskUserQuestion 도구를 즉시 호출한다. Detect user language and translate all labels.
 
 ```json
 {
   "questions": [
-    {
-      "question": "What do you want to brainstorm about?",
-      "header": "Topic",
-      "options": [
-        {"label": "Type your topic", "description": "Enter a topic, problem, or rough idea"},
-        {"label": "Browse examples", "description": "See example frames for inspiration"}
-      ],
-      "multiSelect": false
-    },
     {
       "question": "What is the brainstorm for?",
       "header": "Goal",
@@ -57,9 +56,6 @@ description: This skill should be used when a user wants to build a structured b
   ]
 }
 ```
-
-If user selects "Browse examples", load and present examples from:
-`${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/examples/`
 
 ### Phase 2: Detailed Scoping (Socratic)
 
@@ -120,7 +116,7 @@ After gathering all inputs, generate:
 
 1. **HMW statement** following the rules below
 2. **Structured JSON Frame** following the schema at:
-   `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-frame/references/frame_schema.json`
+   `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/references/frame_schema.json`
 3. **Human-Readable Frame Brief** in markdown
 
 #### HMW Quality Rules (필수)
@@ -153,7 +149,7 @@ How might we help [target] achieve [desired change] given [context/constraint]?
   },
   "divergence": {
     "mode": "research_first",
-    "miners": ["review_miner", "community_miner", "competitor_gap_miner", "trend_miner", "market_data_miner"],
+    "miners": ["review_miner", "community_miner", "competitor_gap_miner", "trend_miner", "market_data_miner", "solution_saturation_miner"],
     "evidence_per_miner": 8,
     "lenses": ["pain_to_product", "gap_wedge", "trend_collision"],
     "ideas_per_lens": 8,
@@ -303,6 +299,6 @@ Save location for frames: `BRAINSTORM/frames/{topic}_{timestamp}.json`
 
 ## References
 
-- Frame schema: `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-frame/references/frame_schema.json`
+- Frame schema: `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/references/frame_schema.json`
 - Socratic policy: `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/references/socratic_policy.md`
 - Example frames: `${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/examples/`

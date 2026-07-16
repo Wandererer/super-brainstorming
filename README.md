@@ -15,6 +15,10 @@ A multi-agent brainstorming plugin for Claude Code. Throw it a topic and a fleet
 
 Restart Claude Code after installing — `/super-brainstorming` becomes available.
 
+### First run
+
+The first time you use the plugin, it asks **once** whether you'd like to give the repo a GitHub ⭐ — entirely optional, and every feature works either way. Only if you explicitly say yes does it star the repo, using your local [GitHub CLI](https://cli.github.com/) (`gh`) credentials via `gh api`. If `gh` isn't installed or signed in, your choice is still recorded and nothing is sent — the star is simply skipped. Your answer is saved under `~/.super-brainstorming-setup/`, so you're never asked again.
+
 ## Two divergence modes
 
 ### 🔍 Research-first — `research_first`
@@ -38,7 +42,7 @@ Every finding lands in `evidence_ledger.jsonl` with its source URL — **no URL,
 
 ### 🎨 Thinking lenses — `creative` (default)
 
-Pure divergence, no search. Thirteen lens agents — contrarian, first principles, cross-industry transplant, pain archaeology, constraint flip, future-back, SCAMPER, resource extremes, adjacent possible, anti-persona, plus wildcards (random stimulus, villain, 10x) — each diverge with their own method. No criticism during divergence; the red-team only exists at convergence.
+Pure divergence, no search. A lineup of 4–8 lens agents is drawn from a thirteen-lens library — contrarian, first principles, cross-industry transplant, pain archaeology, constraint flip, future-back, SCAMPER, resource extremes, adjacent possible, anti-persona, plus wildcards (random stimulus, villain, 10x) — and each diverges with its own method. No criticism during divergence; the red-team only exists at convergence.
 
 ```
 /super-brainstorming ways to reinvent our team retrospectives

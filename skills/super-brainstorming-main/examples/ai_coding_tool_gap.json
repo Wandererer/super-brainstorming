@@ -30,7 +30,8 @@
       "community_miner",
       "competitor_gap_miner",
       "trend_miner",
-      "market_data_miner"
+      "market_data_miner",
+      "solution_saturation_miner"
     ],
     "evidence_per_miner": 8,
     "lenses": [

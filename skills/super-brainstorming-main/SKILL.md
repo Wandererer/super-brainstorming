@@ -17,7 +17,6 @@ description: This skill should be used when a user requests brainstorming or ide
 ```
 # Primary triggers
 - "/super-brainstorming [topic]"
-- "/brainstorm [topic]"
 - "브레인스토밍 [주제]"
 - "아이디어 발산 [주제]"
 - "[주제] 아이디어 내줘"
@@ -70,7 +69,7 @@ description: This skill should be used when a user requests brainstorming or ide
 | Mode | 발산 엔진 | 언제 |
 |------|-----------|------|
 | **`creative`** (기본) | 사고 렌즈 13종 — 창의 기법으로 순수 발산, 검색은 3개 렌즈만 보조 사용 | 전략/피벗/순수 창의, 근거보다 범위가 중요할 때 |
-| **`research_first`** (검색 발굴) | **research 후 brainstorming** — Phase 3a에서 마이너 5종이 리뷰·커뮤니티·경쟁사·트렌드·시장 데이터를 병렬로 뒤져 evidence ledger를 만들고, Phase 3b에서 모든 아이디어가 `evidence_ids`로 근거를 인용 (게이트가 근거 없는 카드 반려) | 시장 빈틈/미충족 니즈 발굴, 신제품 기회 탐색 — "여러 곳을 찾아서 아이디어를 캐내는" 작업 |
+| **`research_first`** (검색 발굴) | **research 후 brainstorming** — Phase 3a에서 마이너 6종이 리뷰·커뮤니티·경쟁사·트렌드·시장 데이터·기존 해법을 병렬로 뒤져 evidence ledger를 만들고, Phase 3b에서 모든 아이디어가 `evidence_ids`로 근거를 인용 (게이트가 근거 없는 카드 반려) | 시장 빈틈/미충족 니즈 발굴, 신제품 기회 탐색 — "여러 곳을 찾아서 아이디어를 캐내는" 작업 |
 
 ### Mode 추론 규칙 (묻기 전에 적용)
 
@@ -244,7 +243,7 @@ HMW = "어떻게 하면 [타깃]이 [맥락/제약]에서 [원하는 변화]를 
 **Every divergence agent, miner, and judge MUST receive today's date in its prompt.**
 
 - "Why now" is a scoring axis (`timing`) — agents can't reason about it without knowing the current date
-- **All 5 miners** (research_first) and research-flavored lenses (`user_pain_archaeologist`, `future_back`, `adjacent_possible`) MUST append the current year to search queries:
+- **All 6 miners** (research_first) and research-flavored lenses (`user_pain_archaeologist`, `future_back`, `adjacent_possible`) MUST append the current year to search queries:
   - BAD: "note app complaints reddit"
   - GOOD: "note app complaints reddit 2026"
 - Evidence cards record `freshness` — 오래된 불만은 이미 해결됐을 수 있다
@@ -384,7 +383,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/super-brainstorming-main/scripts/eval_brie
 
 ### Agent Deployment (Phase 3-5)
 
-Deploy up to 5-8 lens agents — but run them in **throttled batches of 2-3 concurrent** (see the Rate-Limit & Reliability Guard below), not all at once:
+Deploy up to 4-8 lens agents — but run them in **throttled batches of 2-3 concurrent** (see the Rate-Limit & Reliability Guard below), not all at once:
 
 | Agent Type | Count | Phase | Mode | Focus | Output |
 |------------|-------|-------|------|-------|--------|
@@ -396,7 +395,7 @@ Deploy up to 5-8 lens agents — but run them in **throttled batches of 2-3 conc
 | Red-team | 1 | 5 | 공통 | Objections, fatal flaws (me-too 포함) — kill with reasons | red_team blocks per idea |
 | Judge | 2-3 | 5 | 공통 | Independent 5-axis scoring — novelty는 첨부된 선행기술 기준 | judge_scores blocks per idea |
 
-Launch Task calls in **throttled batches (2-3 concurrent)** with `mode: "bypassPermissions"`. Each agent receives a focused prompt from `references/lens_library.md` with the frame, today's date, its id block, and citation-style output contract.
+Launch Task calls in **throttled batches (2-3 concurrent)**. Each agent receives a focused prompt from `references/lens_library.md` with the frame, today's date, its id block, and citation-style output contract.
 
 ### ⚠️ Rate-Limit & Reliability Guard (필수)
 
@@ -453,6 +452,7 @@ For all agent prompt templates:
     "phase_2": "completed",
     "phase_3": "in_progress",
     "phase_4": "pending",
+    "phase_4_5": "pending",
     "phase_5": "pending",
     "phase_6": "pending",
     "phase_7": "pending"
@@ -519,6 +519,7 @@ BRAINSTORM/{topic}_{timestamp}/
 │   ├── 04_evidence_digest.md      # (research_first) 어디를 뒤졌고 무엇이 나왔는지의 증빙
 │   ├── ranked_ideas.json          # gate output (validate_ideas.py)
 │   ├── shortlist.json             # gate output — Phase 6's ONLY input
+│   ├── parked_and_killed.json     # gate output — parking lot 원자료
 │   ├── eval_briefs.json           # closing scorer output
 │   └── handoff.md                 # ready-to-run /insane-research queries
 ```
@@ -577,13 +578,12 @@ When resume is triggered:
 5. Continue execution loop
 
 ```python
-for phase_num in range(1, 8):
-    phase_key = f"phase_{phase_num}"
-    if state["progress"][phase_key] == "in_progress":
-        resume_phase(phase_num)
+for phase_key in ["phase_1", "phase_2", "phase_3", "phase_4", "phase_4_5", "phase_5", "phase_6", "phase_7"]:
+    if state["progress"].get(phase_key, "pending") == "in_progress":
+        resume_phase(phase_key)
         break
-    elif state["progress"][phase_key] == "pending":
-        start_phase(phase_num)
+    elif state["progress"].get(phase_key, "pending") == "pending":
+        start_phase(phase_key)
         break
 ```
 

@@ -2,6 +2,37 @@
 
 All notable changes to super-brainstorming will be documented in this file.
 
+## [0.2.1] - 2026-07-16
+
+### Fixed — 6th miner restored, gate scorers hardened, first-run made transparent
+
+0.2.0 added the supply-side `solution_saturation_miner`, but hardcoded 5-miner
+arrays in the frame template and example frames silently dropped it, and stale
+"5 miners" wording lingered across the skill, command, and docs. This patch makes
+the 6-miner lineup consistent end-to-end, hardens the deterministic scorers against
+edge-case inputs, and documents first-run behavior that had gone unmentioned:
+
+- **`solution_saturation_miner` restored** — reinstated in the frame template and the
+  bundled research_first example frame (previously clipped by an explicit 5-miner array),
+  and stale "5 miner" wording corrected across the skill, command, and READMEs so the
+  supply-side check actually runs.
+- **`validate_ideas.py` / `eval_briefs.py` crash fixes** — non-object JSONL lines no
+  longer crash the gate, and `research_first` without an evidence path is handled
+  instead of throwing.
+- **Closing-grader fixes** — `eval_briefs.py` no longer passes vacuously when
+  `selected_ideas` is missing, and handoff validation-query counting was corrected.
+- **`frame_schema.json` deduplicated** — collapsed to a single canonical copy with
+  `min_lenses` documented.
+- **First-run transparency** — `setup.sh` now derives its fallback prompt language from
+  `$LC_ALL`/`$LANG` instead of scanning past Claude session transcripts, and the optional
+  one-time GitHub-star prompt (asked at most once, recorded under
+  `~/.super-brainstorming-setup/`) is now documented in both READMEs. README lens-count
+  wording was corrected — a lineup of 4–8 lenses is drawn from a thirteen-lens library,
+  not all thirteen.
+- **Pipeline cleanups** — removed a phantom `/brainstorm` trigger and a `bypassPermissions`
+  Task parameter, added a `phase_4_5` resume slot, and added `parked_and_killed.json` to
+  the documented output tree.
+
 ## [0.2.0] - 2026-07-03
 
 ### Added — supply-side check (me-too ideas can no longer win)

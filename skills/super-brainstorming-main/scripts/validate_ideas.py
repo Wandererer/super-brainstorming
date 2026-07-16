@@ -122,41 +122,54 @@ def _read_jsonl(path):
             if not line:
                 continue
             try:
-                records.append(json.loads(line))
+                rec = json.loads(line)
             except json.JSONDecodeError as e:
                 errors.append(f"{os.path.basename(path)}:{lineno} JSON 파싱 실패: {e}")
+                continue
+            if not isinstance(rec, dict):
+                errors.append(f"{os.path.basename(path)}:{lineno} 레코드가 JSON 객체가 아님")
+                continue
+            records.append(rec)
     return records, errors
 
 
 def _load_config(frame_path):
-    """frame.json에서 모드/게이트 설정/가중치 로드. 없으면 기본값(creative)."""
+    """frame.json에서 모드/게이트 설정/가중치 로드. 없으면 기본값(creative).
+
+    (config, weights, mode, errors) 반환. frame이 JSON 객체가 아니면 errors에 하드 에러
+    (파싱 불가는 기존대로 조용히 기본값 — frame은 선택 입력).
+    """
     config = dict(DEFAULT_CONFIG)
     weights = dict(DEFAULT_WEIGHTS)
     mode = "creative"
+    errors = []
     if frame_path and os.path.exists(frame_path):
         try:
             with open(frame_path, "r", encoding="utf-8") as f:
                 frame = json.load(f)
         except (OSError, json.JSONDecodeError):
-            return config, weights, mode
-        if (frame.get("divergence") or {}).get("mode") == "research_first":
-            mode = "research_first"
-        conv = frame.get("convergence") or {}
-        for key in DEFAULT_CONFIG:
-            val = conv.get(key)
-            if isinstance(val, int) and val >= 0:
-                config[key] = val
-        user_w = conv.get("scoring_weights") or {}
-        for axis in AXES:
-            val = user_w.get(axis)
-            if isinstance(val, (int, float)) and val >= 0:
-                weights[axis] = float(val)
+            frame = None
+        if frame is not None and not isinstance(frame, dict):
+            errors.append(f"frame.json이 JSON 객체가 아님: {frame_path}")
+        elif isinstance(frame, dict):
+            if (frame.get("divergence") or {}).get("mode") == "research_first":
+                mode = "research_first"
+            conv = frame.get("convergence") or {}
+            for key in DEFAULT_CONFIG:
+                val = conv.get(key)
+                if isinstance(val, int) and val >= 0:
+                    config[key] = val
+            user_w = conv.get("scoring_weights") or {}
+            for axis in AXES:
+                val = user_w.get(axis)
+                if isinstance(val, (int, float)) and val >= 0:
+                    weights[axis] = float(val)
     total = sum(weights.values())
     if total <= 0:
         weights = dict(DEFAULT_WEIGHTS)
         total = sum(weights.values())
     weights = {k: v / total for k, v in weights.items()}
-    return config, weights, mode
+    return config, weights, mode, errors
 
 
 def check_evidence(records):
@@ -394,16 +407,21 @@ def build_shortlist(ranked, size):
 
 
 def validate(ledger_path, frame_path, evidence_path, out_dir, state_path):
-    config, weights, mode = _load_config(frame_path)
+    config, weights, mode, cfg_errs = _load_config(frame_path)
 
     cards, parse_errs = _read_jsonl(ledger_path)
     hard_errors = list(parse_errs)
+    hard_errors.extend(cfg_errs)
     cards_by_id, schema_errs = check_cards(cards)
     hard_errors.extend(schema_errs)
 
     # evidence ledger — research_first 모드 필수, creative 모드는 있으면 검사
     evidence_by_id = {}
-    if mode == "research_first" or (evidence_path and os.path.exists(evidence_path)):
+    if mode == "research_first" and not evidence_path:
+        hard_errors.append(
+            "research_first 모드인데 evidence 경로 없음 — --evidence 또는 --session 필요"
+        )
+    elif mode == "research_first" or (evidence_path and os.path.exists(evidence_path)):
         evidence, ev_parse_errs = _read_jsonl(evidence_path)
         if mode == "research_first":
             hard_errors.extend(ev_parse_errs)
@@ -577,6 +595,8 @@ def _stamp_state(state_path, passed, signature, stats, shortlist_ids, wildcard_s
             state = json.load(f)
     except (OSError, json.JSONDecodeError):
         return
+    if not isinstance(state, dict):
+        return  # 비-객체 state.json은 조용히 스킵 (게이트 판정·산출물은 이미 유효)
     state["convergence"] = {
         "passed": passed,
         "signature": signature,

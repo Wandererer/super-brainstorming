@@ -205,7 +205,7 @@ contract violations for this lens.
 
 # Research-First Mode — 검색 발굴 ("research 후 brainstorming")
 
-Phase 3이 두 단계로 갈라진다: **3a 증거 채굴** (마이너 5종이 서로 다른 소스를 병렬 검색 → `artifacts/evidence_ledger.jsonl`) → **3b 근거 기반 발상** (합성 렌즈 3종이 증거에서 아이디어 생성 — `evidence_ids` 필수). 아이디어가 머리가 아니라 **발굴된 근거에서** 나온다.
+Phase 3이 두 단계로 갈라진다: **3a 증거 채굴** (마이너 6종이 서로 다른 소스를 병렬 검색 → `artifacts/evidence_ledger.jsonl`) → **3b 근거 기반 발상** (합성 렌즈 3종이 증거에서 아이디어 생성 — `evidence_ids` 필수). 아이디어가 머리가 아니라 **발굴된 근거에서** 나온다.
 
 ## Shared Miner Contract (모든 마이너 프롬프트에 포함)
 

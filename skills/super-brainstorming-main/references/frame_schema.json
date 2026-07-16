@@ -182,6 +182,12 @@
           "default": 1,
           "description": "Gate threshold — cross-pollination proof"
         },
+        "min_lenses": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3,
+          "description": "Gate threshold — surviving candidates must span at least this many distinct lenses; fewer is a process violation (exit 1)"
+        },
         "min_evidence": {
           "type": "integer",
           "minimum": 5,
